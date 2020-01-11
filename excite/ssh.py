@@ -16,6 +16,7 @@
 """
 import paramiko
 
+
 def _do_print(*items):
     """
         Simple function for handling printing.
@@ -98,13 +99,9 @@ class SshConnectionManager:
         return f"<class>SshConnectionManager. Clients: {self.connections}"
 
 
-class TmuxInterface:
-    def __init__(self):
-        pass
-
-
 def parse_nvidia_smi_output(nvidia_smi_output):
     """
+        TODO
         Parse the output of "nvidia-smi" command to get gpu info
         :param nvidia_smi_output: the output of the "nvidia-smi" command
         :return:
@@ -118,6 +115,10 @@ class GPU:
 
 
 class SshConnection:
+    """
+        An SshConnection object represents a connection between a remote machine and the
+        local host.
+    """
     def __init__(self, url, username, password, client_name, port=22, is_debug=False):
         """
             :param url:
@@ -196,6 +197,9 @@ class SshConnection:
             do_on_finished()
 
         return output
+
+    def create_tmux_session(self, session_name):
+        pass
 
     def _execute_cmd(self, command):
         """

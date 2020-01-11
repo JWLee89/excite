@@ -15,6 +15,9 @@
     - Paramiko: (link: https://github.com/paramiko/paramiko)
 """
 import paramiko
+import re
+import time
+import sys
 
 
 def _do_print(*items):
@@ -119,7 +122,8 @@ class SshConnection:
         An SshConnection object represents a connection between a remote machine and the
         local host.
     """
-    def __init__(self, url, username, password, client_name, port=22, is_debug=False):
+
+    def __init__(self, url, username, password, client_name, port=22, is_debug=False, use_interactive_shell=True):
         """
             :param url:
             :param username:
@@ -136,6 +140,13 @@ class SshConnection:
         self.is_debug = is_debug
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.use_interactive_shell = use_interactive_shell
+
+        # Open
+        self.open()
+
+        if use_interactive_shell:
+            self.channel = self.ssh.invoke_shell()
 
     def open(self):
         """
@@ -165,6 +176,8 @@ class SshConnection:
         """
         if self._isalive():
             self.ssh.close()
+            if self.is_debug:
+                _do_print(f"Successfully closed: {self}")
 
     def cmd(self, shell_command, close_after=False, do_on_finished=None):
         """
@@ -174,16 +187,20 @@ class SshConnection:
             :return:
         """
         self.open()
+        if self.use_interactive_shell:
+            command_handler = self._execute_interactive_cmd
+        else:
+            command_handler = self._execute_cmd
         # Pass command
         if isiterable(shell_command):
-            output = []
             for command in shell_command:
-                command_output = self._execute_cmd(command)
-                output.append(command_output)
+                output_data, has_errors = command_handler(command)
+                output = ''.join(output_data)
                 if self.is_debug:
-                    _do_print(f"Command executed. Output: {command_output}")
+                    _do_print(f"Command executed: '{command}'. Output: {output}. has errors: {has_errors}")
         elif type(str):
-            output = self._execute_cmd(shell_command)
+            output_data, has_errors = command_handler(shell_command)
+            output = ''.join(output_data)
         else:
             raise TypeError(f"Argument should be a string literal command "
                             f"or a set of commands. Problem with: {shell_command}")
@@ -209,8 +226,27 @@ class SshConnection:
         """
         stdin, stdout, stderr = self.ssh.exec_command(command)
         outlines = stdout.readlines()
-        resp = ''.join(outlines)
-        return resp
+        errors = stderr.readlines()
+        has_errors = False
+        if len(errors) > 0:
+            has_errors = True
+        return outlines, has_errors
+
+    def _execute_interactive_cmd(self, cmd):
+        """
+                :param cmd: the command to be executed on the remote computer
+                :examples:  execute('ls')
+                            execute('finger')
+                            execute('cd folder_name')
+                """
+        cmd = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', cmd).replace('\b', '').replace('\r', '')
+        self.channel.send(cmd + '\n')
+        time.sleep(0.25)
+        while True:
+            if self.channel.recv_ready():
+                channel_data = self.channel.recv(65535).decode("utf-8")
+                has_errors = self.channel.recv_stderr_ready()
+                return channel_data, has_errors
 
     def gpu_info(self):
         """
@@ -219,10 +255,14 @@ class SshConnection:
         result = []
         nvidia_smi_output = self.cmd("nvidia-smi")
         if self.is_debug:
-            _do_print(f"------------------------------ {self.client_name} ------------------------------  \n{nvidia_smi_output}")
+            _do_print(
+                f"------------------------------ {self.client_name} ------------------------------  \n{nvidia_smi_output}")
         result.append(nvidia_smi_output)
         return result
 
     def __repr__(self):
         return f"<SshConnection>: [url={self.url}, username={self.username}, client_name={self.client_name}" \
                f", port={self.port}]"
+
+    def __del__(self):
+        self.ssh.close()

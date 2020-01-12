@@ -241,7 +241,7 @@ class SshConnection:
                 """
         cmd = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', cmd).replace('\b', '').replace('\r', '')
         self.channel.send(cmd + '\n')
-        time.sleep(0.25)
+        time.sleep(0.5)
         while True:
             if self.channel.recv_ready():
                 channel_data = self.channel.recv(65535).decode("utf-8")
@@ -253,7 +253,7 @@ class SshConnection:
             :return: Returns a list of GPU information via the "nvidia-smi" command
         """
         result = []
-        nvidia_smi_output = self.cmd("nvidia-smi")
+        nvidia_smi_output, has_errors = self._execute_cmd("nvidia-smi")
         if self.is_debug:
             _do_print(
                 f"------------------------------ {self.client_name} ------------------------------  \n{nvidia_smi_output}")

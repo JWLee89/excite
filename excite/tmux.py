@@ -47,7 +47,10 @@ class Tmux:
     new_session = create_command("new-session", '-s')
     rename_session = create_command("rename-session")
     kill_session = create_command("kill-session", '-t')
-    detach = create_command("detach")
+    # detach = create_command("detach")
+    # So that we can detach while a script that takes
+    # days to run is running
+    detach = lambda: chr(2) + chr(ord('d'))     # ctrl-d + b
     attach = create_command("attach", '-t')
 
 

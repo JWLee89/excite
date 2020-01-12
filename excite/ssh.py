@@ -17,8 +17,7 @@
 import paramiko
 import re
 import time
-import sys
-
+from . import gpu
 
 def _do_print(*items):
     """
@@ -45,7 +44,7 @@ def isiterable(target):
         return True
 
 
-def create_connections(connections, username, password, port=9999):
+def create_connections(connections, username, password, port=9999, is_debug=False):
     """
 
         :param connections:
@@ -58,7 +57,7 @@ def create_connections(connections, username, password, port=9999):
     for url in connections:
         client_name = url.split(".")[0]
         print(f"URL: {url}. Client name: {client_name}")
-        result.append(SshConnection(url, username, password, client_name=client_name, port=port, is_debug=True))
+        result.append(SshConnection(url, username, password, client_name=client_name, port=port, is_debug=is_debug))
     return result
 
 
@@ -100,21 +99,6 @@ class SshConnectionManager:
 
     def __repr__(self):
         return f"<class>SshConnectionManager. Clients: {self.connections}"
-
-
-def parse_nvidia_smi_output(nvidia_smi_output):
-    """
-        TODO
-        Parse the output of "nvidia-smi" command to get gpu info
-        :param nvidia_smi_output: the output of the "nvidia-smi" command
-        :return:
-    """
-    result = []
-
-
-class GPU:
-    def __init__(self):
-        pass
 
 
 class SshConnection:
@@ -252,13 +236,11 @@ class SshConnection:
         """
             :return: Returns a list of GPU information via the "nvidia-smi" command
         """
-        result = []
         nvidia_smi_output, has_errors = self._execute_cmd("nvidia-smi")
         if self.is_debug:
             _do_print(
                 f"------------------------------ {self.client_name} ------------------------------  \n{nvidia_smi_output}")
-        result.append(nvidia_smi_output)
-        return result
+        return gpu.parse_nvidia_smi_output(nvidia_smi_output)
 
     def __repr__(self):
         return f"<SshConnection>: [url={self.url}, username={self.username}, client_name={self.client_name}" \

@@ -16,17 +16,28 @@ class bcolors:
 
 
 def colored_str_builder(color):
-
-    def colored_str(input_str, start=0, end=None):
+    """
+        Function to building colored string
+        :param color: The color that we want to display.
+        :return:
+    """
+    def colored_str(*input_str, sep=" ", start=None, end=None):
         """
-            :param input_str:
-            :param start:
-            :param end:
-            :return:
+            :param input_str: The input string. Simi
+            :param sep: The separator for each of the inputs passed
+            :param start: The starting index of the string. If not specified, equals to 0.
+            :param end: The ending index of the colored portion. If not specified, equals to
+            length of the string.
+            :return: Colored version of the string
         """
-        if end is None:
-            end = len(input_str)
-        return input_str[:start] + color + input_str[start:end] + bcolors.ENDC
+        concat_str = sep.join(input_str)
+        if end is None and start is None:
+            return color + concat_str + bcolors.ENDC
+        elif start is None:
+            start = 0
+        elif end is None:
+            end = len(concat_str)
+        return concat_str[:start] + color + concat_str[start:end] + bcolors.ENDC
     return colored_str
 
 
@@ -39,5 +50,5 @@ bold_str = colored_str_builder(bcolors.BOLD)
 
 
 if __name__ == "__main__":
-    print(warning_str("this is a warning"))
-    print(bold_str("this is a warning", 2))
+    print(warning_str("this is a warning", " this is a test"))
+    print(bold_str("this is a warning", start=2))

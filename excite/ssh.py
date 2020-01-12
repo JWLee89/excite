@@ -18,6 +18,7 @@ import paramiko
 import re
 import time
 from . import gpu
+from . import util
 
 
 def _do_print(*items):
@@ -27,7 +28,7 @@ def _do_print(*items):
         :param items:
         :return:
     """
-    print("DEBUG::: ", *items)
+    util.info_str("DEBUG::: ", *items)
 
 
 def isiterable(target):
@@ -45,7 +46,7 @@ def isiterable(target):
         return True
 
 
-def create_connections(connections, username, password, port=9999, is_debug=False):
+def create_connections(connections, username, password, port=9999, is_debug=True):
     """
 
         :param connections:
@@ -57,7 +58,8 @@ def create_connections(connections, username, password, port=9999, is_debug=Fals
     result = []
     for url in connections:
         client_name = url.split(".")[0]
-        print(f"URL: {url}. Client name: {client_name}")
+        if is_debug:
+            _do_print(f"Connecting to => URL: {url}. Client name: {client_name}")
         result.append(SshConnection(url, username, password, client_name=client_name, port=port, is_debug=is_debug))
     return result
 

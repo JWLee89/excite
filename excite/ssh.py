@@ -19,6 +19,7 @@ import re
 import time
 from . import gpu
 
+
 def _do_print(*items):
     """
         Simple function for handling printing.

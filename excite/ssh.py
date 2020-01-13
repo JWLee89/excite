@@ -17,8 +17,17 @@
 import paramiko
 import re
 import time
-from . import gpu
-from . import util
+import sys
+
+try:
+    from . import gpu
+except:
+    import gpu
+
+try:
+    from . import logging
+except:
+    import logging
 
 
 def _do_print(*items):
@@ -28,7 +37,7 @@ def _do_print(*items):
         :param items:
         :return:
     """
-    util.info_str("DEBUG::: ", *items)
+    print(logging.warning_str("DEBUG::: "), logging.info_str(*items))
 
 
 def isiterable(target):
@@ -89,10 +98,68 @@ class SshConnectionManager:
                     connection.open()
 
     def gpu_info(self):
+        """
+            Get GPU information from "nvidia-smi"
+            and append metadata to the information.
+            Some metadata include
+            - Machine with largest number of free space
+            :return:
+        """
         result = {}
+        metadata = {}
+
+        # first slot represents the value, the second is the name of the item
+        min_memory = [sys.maxsize, '']
+        min_free_memory = [sys.maxsize, '']
+        min_consumed_memory = [sys.maxsize, '']
+
+        max_memory = [0, '']
+        max_free_memory = [0, '']
+        max_consumed_memory = [0, '']
+
+        def update_min(min_thus_far, current_value, name):
+            if min_thus_far[0] > current_value:
+                print("updating min")
+                min_thus_far[0], min_thus_far[1] = current_value, name
+
+        def update_max(max_thus_far, current_value, name):
+            if max_thus_far[0] < current_value:
+                max_thus_far[0], max_thus_far[1] = current_value, name
+
+        gpu_info_list = []
+
+        # Get gpu info
         for connection in self.connections:
-            result[connection.client_name] = connection.gpu_info()
-        return result
+            gpu_info, server_stats = connection.gpu_info()
+            server_name = connection.client_name
+            result[server_name] = gpu_info, server_stats
+            total_memory, total_free_memory, total_consumed_memory = \
+                server_stats['total_memory'], server_stats['total_free_memory'], server_stats['total_consumed_memory']
+
+            # Update min
+            update_min(min_memory, total_memory, server_name)
+            update_min(min_free_memory, total_free_memory, server_name)
+            update_min(min_consumed_memory, total_consumed_memory, server_name)
+
+            # Update max
+            update_max(max_memory, total_memory, server_name)
+            update_max(max_free_memory, total_free_memory, server_name)
+            update_max(max_consumed_memory, total_consumed_memory, server_name)
+
+
+        # Update metadata
+        metadata['min_memory'] = min_memory
+        metadata['min_free_memory'] = min_free_memory
+        metadata['min_consumed_memory'] = min_consumed_memory
+
+        metadata['max_memory'] = max_memory
+        metadata['max_free_memory'] = max_free_memory
+        metadata['max_consumed_memory'] = max_consumed_memory
+
+        # Free memory based on
+        # metadata['free']
+
+        return result, metadata
 
     def __getitem__(self, position):
         return self.connections[position]

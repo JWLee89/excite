@@ -5,20 +5,28 @@
     information on GPU usage.
 """
 import re
+import sys
 
-
-def parse_nvidia_smi_output(nvidia_smi_output):
+def parse_nvidia_smi_output(nvidia_smi_output, sort_key="index", reverse=False):
     """
         Parse the output of "nvidia-smi" command to get gpu info.
-        As nvidia-smi information gets updated, this code will also need to change
+        As nvidia-smi information gets updated, this code will also need to change.
+        Sorted in order
         :param nvidia_smi_output: the output of the "nvidia-smi" command
+        :param sort_key: The key to sort by
+        :param reverse: whether to sort in descending order
         :return: output with the f
     """
     # First 6 rows are junk so discard
     # Each row has a length of 80 characters in total
     row_index = 0
-    data_interval = 3
+    data_interval = 3  # GPU info spans across three rows. Last row is junk.
     result = []
+    total_free_memory = 0
+    total_memory = 0
+    total_consumed_memory = 0
+    min_free_memory = sys.maxsize  # GPU index with free_est memory
+
     for row in nvidia_smi_output[7:]:
         # First row has gpu index and name. Grab those
         if row_index % data_interval == 0:
@@ -42,13 +50,21 @@ def parse_nvidia_smi_output(nvidia_smi_output):
             current_consumption, total_consumption = re.findall(r'\d+', row_split[2])
             current_gpu_dict['current_memory'] = int(current_consumption)
             current_gpu_dict['total_memory'] = int(total_consumption)
+            current_gpu_dict['free_memory'] = current_gpu_dict['total_memory'] - current_gpu_dict['current_memory']
+
+            # Update statistics
+            total_memory += current_gpu_dict['total_memory']
+            total_consumed_memory += current_gpu_dict['current_memory']
+            total_free_memory += current_gpu_dict['free_memory']
+            min_free_memory = min(min_free_memory, current_gpu_dict['free_memory'])
+
         else:
             # Every third row is junk
             result.append(current_gpu_dict)
 
         row_index += 1
 
-    return result
-
-
-
+    return sorted(result, key=lambda i: i[sort_key], reverse=reverse), {'total_memory': total_memory,
+                                                                        'total_free_memory': total_free_memory,
+                                                                        'min_free_memory': min_free_memory,
+                                                                        'total_consumed_memory': total_consumed_memory}

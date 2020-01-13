@@ -22,7 +22,6 @@ def common_commands(session_name, tasks=[]):
 
 def print_gpu_info(server_manager):
     """
-
         :param server_manager: Manager object containing a list
         of connections.
         :return:
@@ -41,6 +40,7 @@ def print_gpu_info(server_manager):
 
     # Print manager stats
     max_key = -1
+
     del gpu_info['servers']
     for stats_key in gpu_info.keys():
         max_key = max(max_key, len(stats_key))
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     password = 'password'
 
     servers = [f"server{i}.domain.co.kr" for i in range(2, 8)]
-    tmux_session_names = [f"tmux_seession_names{i}" for i in range(2, 8)]
+    tmux_session_names = [f"tmux_session_names{i}" for i in range(2, 8)]
 
     # Create the ssh connection objects.
     # Each connection represents an ssh connection to the user

@@ -1,6 +1,6 @@
 # Excite
 
-## What is Excite
+## What is Excite?
 
 A tool for researchers to effectively run and keep track of experiments on remote servers.
 

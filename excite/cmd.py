@@ -1,6 +1,9 @@
 """
     @Author Jay Lee
-    Interface for the Tmux session.
+    Simple interface for interacting with the CLI.
+    One concrete implementation thus far is an implementation
+    of the Tmux interface. Currently a work in progress.
+    Feel free to add more of your favorite commands.
 """
 
 COMMAND_PREFIX = "tmux "

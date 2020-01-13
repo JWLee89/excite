@@ -7,6 +7,7 @@
 import re
 import sys
 
+
 def parse_nvidia_smi_output(nvidia_smi_output, sort_key="index", reverse=False):
     """
         TODO: This needs to be optimized and rewritten later. Not very pretty.

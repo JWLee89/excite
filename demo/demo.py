@@ -61,7 +61,7 @@ if __name__ == "__main__":
     tmux_session_names = [f"tmux_session_names{i}" for i in range(2, 8)]
 
     # Create the ssh connection objects.
-    # Each connection represents an ssh connection to the user
+    # Each connection represents an ssh connection to a server
     connections = ssh.create_connections(servers, username, password, port=port, is_debug=True)
     # Create sess
     manager = ssh.SshConnectionManager(connections)

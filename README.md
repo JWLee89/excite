@@ -23,6 +23,12 @@ Below is a list of the following commands and their corresponding python method
 - `ctrl + b, d` -> `Tmux.detach()`
 - `tmux attach -t teemo` -> `Tmux.attach('teemo')`
 
+We can also add flags to each command. E.g.
+- `ls -l` -> `Shell.ls('-l')`
+
+It is also possible to chain these flags. E.g.
+- `ls -l -all` -> `Shell.ls('-l', '-all')`
+
 ## Dependencies
 
 Requires: Python 3.5 >= (not tested on lower versions, but may still work).

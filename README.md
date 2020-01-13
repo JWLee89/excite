@@ -102,7 +102,10 @@ def print_gpu_info(server_manager):
 
 ```
 
-### Creating Tmux sessions and executing commands remotely
+### Dynamic Tmux Session Creation
+
+We can also dynamically create tmux sessions and interact with the session programatically, which helps in automating
+tasks.
 
 ```python
 servers = [f"server{i}.domain.co.kr" for i in range(1, 8)]

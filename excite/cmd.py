@@ -19,7 +19,7 @@ def _append_args(input_str, *fixed_args):
     return input_str
 
 
-def create_command(cmd, *fixed_args):
+def create_tmux_command(cmd, *fixed_args):
     """
         :param cmd: The actual command.
         :param fixed_args: Args for adding fixed prefixes to a command
@@ -38,20 +38,26 @@ def create_command(cmd, *fixed_args):
     return command
 
 
+class CMD:
+    """
+        Commands to pass
+    """
+
+
 class Tmux:
     """
         Interface containing a list of common tmux comamnds used by me :)
     """
     # Commands
-    ls = create_command("ls")
-    new_session = create_command("new-session", '-s')
-    rename_session = create_command("rename-session")
-    kill_session = create_command("kill-session", '-t')
+    ls = create_tmux_command("ls")
+    new_session = create_tmux_command("new-session", '-s')
+    rename_session = create_tmux_command("rename-session")
+    kill_session = create_tmux_command("kill-session", '-t')
     # detach = create_command("detach")
     # So that we can detach while a script that takes
     # days to run is running
     detach = lambda: chr(2) + chr(ord('d'))     # ctrl-d + b
-    attach = create_command("attach", '-t')
+    attach = create_tmux_command("attach", '-t')
 
 
 if __name__ == "__main__":

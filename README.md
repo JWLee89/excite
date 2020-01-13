@@ -13,6 +13,16 @@ Below is a list of features.
 - Create and manage tmux sessions remotely
 - Built-in debugging features
 
+### Tmux Interface
+
+Below is a list of the following commands and their corresponding python method
+
+- `tmux ls` -> `Tmux.ls()`
+- `tmux new-session -s teemo` -> `Tmux.new_session("teemo")`
+- `tmux kill-session -t teemo` -> `Tmux.kill_session("teemo")`
+- `ctrl + b, d` -> `Tmux.detach()`
+- `tmux attach -t teemo` -> `Tmux.attach('teemo')`
+
 ## Dependencies
 
 Requires: Python 3.5 >= (not tested on lower versions, but may still work).

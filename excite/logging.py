@@ -1,4 +1,5 @@
 """
+    @Author Jay Lee
     Credits to joeld at stackoverflow for the examples and also the link to the
     blender build script for the bcolors class
     link: https://stackoverflow.com/questions/287871/how-to-print-colored-text-in-terminal-in-python

@@ -9,6 +9,8 @@ import sys
 
 def parse_nvidia_smi_output(nvidia_smi_output, sort_key="index", reverse=False):
     """
+        TODO: This needs to be optimized and rewritten later. Not very pretty.
+
         Parse the output of "nvidia-smi" command to get gpu info.
         As nvidia-smi information gets updated, this code will also need to change.
         Sorted in order

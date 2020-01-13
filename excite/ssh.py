@@ -19,6 +19,7 @@ import re
 import time
 import sys
 import copy
+import socket
 
 try:
     from . import gpu
@@ -31,7 +32,7 @@ except:
     import logging
 
 
-def _do_print(*items):
+def print_debug_log(*items):
     """
         Simple function for handling printing.
         In case we want to change behavior in the future to logging.
@@ -39,6 +40,15 @@ def _do_print(*items):
         :return:
     """
     print(logging.warning_str("DEBUG::: "), logging.info_str(*items))
+
+
+def print_error_log(*items):
+    """
+
+    :param items:
+    :return:
+    """
+    print(logging.fail_str("ERROR::: "), logging.warning_str(*items))
 
 
 def isiterable(target):
@@ -69,8 +79,12 @@ def create_connections(connections, username, password, port=9999, is_debug=True
     for url in connections:
         client_name = url.split(".")[0]
         if is_debug:
-            _do_print(f"Connecting to => URL: {url}. Client name: {client_name}")
-        result.append(SshConnection(url, username, password, client_name=client_name, port=port, is_debug=is_debug))
+            print_debug_log(f"Connecting to => URL: {url}. Client name: {client_name}")
+        try:
+            result.append(SshConnection(url, username, password, client_name=client_name, port=port, is_debug=is_debug))
+        except AttributeError as e:
+            print_error_log(f"Failed to connect to {url}. Please check your credentials.")
+
     return result
 
 
@@ -218,11 +232,15 @@ class SshConnection:
         """
         if self._isalive():
             if self.is_debug:
-                _do_print("connection is still alive!")
+                print_debug_log("connection is still alive!")
             return
         if self.is_debug:
-            _do_print(f"Attempting the following command: ssh {self.username}@{self.url} -p {self.port}")
-        self.ssh.connect(self.url, self.port, self.username, self.password)
+            print_debug_log(f"Attempting the following command: ssh {self.username}@{self.url} -p {self.port}")
+        try:
+            self.ssh.connect(self.url, self.port, self.username, self.password)
+        except socket.gaierror as e:
+            e_str = str(e)
+            print_error_log(f"Failed to connect: {e_str}")
 
     def _isalive(self):
         """
@@ -240,7 +258,7 @@ class SshConnection:
         if self._isalive():
             self.ssh.close()
             if self.is_debug:
-                _do_print(f"Successfully closed: {self}")
+                print_debug_log(f"Successfully closed: {self}")
 
     def cmd(self, shell_command, close_after=False, do_on_finished=None):
         """
@@ -260,7 +278,7 @@ class SshConnection:
                 output_data, has_errors = command_handler(command)
                 output = ''.join(output_data)
                 if self.is_debug:
-                    _do_print(f"Command executed: '{command}'. Output: {output}. has errors: {has_errors}")
+                    print_debug_log(f"Command executed: '{command}'. Output: {output}. has errors: {has_errors}")
         elif type(str):
             output_data, has_errors = command_handler(shell_command)
             output = ''.join(output_data)
@@ -317,7 +335,7 @@ class SshConnection:
         """
         nvidia_smi_output, has_errors = self._execute_cmd("nvidia-smi")
         if self.is_debug:
-            _do_print(
+            print_debug_log(
                 f"------------------------------ {self.client_name} ------------------------------  \n{nvidia_smi_output}")
         return gpu.parse_nvidia_smi_output(nvidia_smi_output)
 

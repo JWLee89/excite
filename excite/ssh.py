@@ -32,23 +32,21 @@ except:
     import logging
 
 
-def print_debug_log(*items):
+def print_debug_log(*messages):
     """
         Simple function for handling printing.
         In case we want to change behavior in the future to logging.
-        :param items:
-        :return:
+        :param messages: The message that we want to print
     """
-    print(logging.warning_str("DEBUG::: "), logging.info_str(*items))
+    print(logging.warning_str("DEBUG::: "), logging.info_str(*messages))
 
 
-def print_error_log(*items):
+def print_error_log(*messages):
     """
-
-    :param items:
-    :return:
+        Print error text message
+        :param messages: The message that we want to print
     """
-    print(logging.fail_str("ERROR::: "), logging.warning_str(*items))
+    print(logging.fail_str("ERROR::: "), logging.warning_str(*messages))
 
 
 def isiterable(target):
@@ -56,7 +54,7 @@ def isiterable(target):
         From the pysistant library (@author Jay Lee)
         Check if target object is iterable
         :param target:
-        :return: true if target is iterable. Otherwise, return false
+        :return: True if target is iterable. Otherwise, return False.
     """
     try:
         iter(target)
@@ -66,17 +64,23 @@ def isiterable(target):
         return True
 
 
-def create_connections(connections, username, password, port=9999, is_debug=True):
+def create_connections(server_urls, username, password, port=22, is_debug=True):
     """
+        Sample function for creating connections. Alternatively, users can create individual
+        connections by creating an instance of the SshConnection class.
+        This function assumes that users are logging into all "n" servers using the same
+        credential.
+        This is merely a sample function, since it is trivial to make one that best serves
+        ones needs.
 
-        :param connections:
-        :param username:
-        :param password:
-        :param port:
+        :param server_urls: A list containing the url of all ssh connections being made
+        :param username: Username
+        :param password: password
+        :param port: port of ssh connection, which by default is 22
         :return:
     """
     result = []
-    for url in connections:
+    for url in server_urls:
         client_name = url.split(".")[0]
         if is_debug:
             print_debug_log(f"Connecting to => URL: {url}. Client name: {client_name}")

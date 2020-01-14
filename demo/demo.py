@@ -1,3 +1,13 @@
+"""
+    @Author Jay Lee
+    A simple demo containing the creation of tmux sessions programatically and
+    also writing a command on the remote session.
+    The demo also involves extracting the gpu information from nvidia-based GPUs.
+
+    I don't have non Nvidia-based GPUs so I wont be able to develop code for other GPUs
+    until I get my hands on or access to such machines
+"""
+
 from excite import ssh
 from excite.cmd import Tmux
 

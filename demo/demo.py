@@ -57,8 +57,9 @@ if __name__ == "__main__":
     username = 'username'
     password = 'password'
 
-    servers = [f"server{i}.domain.co.kr" for i in range(2, 8)]
-    tmux_session_names = [f"tmux_session_names{i}" for i in range(2, 8)]
+    # Server and session info
+    servers = [f"server{i}.domain.co.kr" for i in range(5, 8)]
+    tmux_session_names = [f"tmux_session_names{i}" for i in range(5, 8)]
 
     # Create the ssh connection objects.
     # Each connection represents an ssh connection to a server

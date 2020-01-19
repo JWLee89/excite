@@ -79,6 +79,7 @@ class Tmux:
     new_session = create_tmux_command("new-session", '-s')
     rename_session = create_tmux_command("rename-session")
     kill_session = create_tmux_command("kill-session", '-t')
+    kill_current_session = lambda: "exit"
     # detach = create_command("detach")
     # So that we can detach while a script that takes
     # days to run is running

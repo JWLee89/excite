@@ -118,13 +118,12 @@ class ExtendedMLP(MLP):
         return "teemo"
 
 
-@train(epochs=200, lr=0.0001, save_dir="teemo", training_finished=lambda : print("training has finished"))
+@train(epochs=10, lr=0.0001, save_dir="teemo", training_finished=lambda x: print("training has finished yaye!"))
 def train_mnist(model, epoch, *args, **kwargs):
 
     cuda = torch.cuda.is_available()
     if cuda:
         model = model.cuda()
-    print(kwargs)
     data_loader = kwargs['data']
 
     total_correct = 0
@@ -158,7 +157,7 @@ def train_mnist(model, epoch, *args, **kwargs):
         step += 1
 
     accuracy = total_correct / total
-    print(f"Epoch {epoch}/{200}. Accuracy: {accuracy:.3f}")
+    print(f"Epoch {epoch}/{kwargs['epochs']}. Accuracy: {accuracy:.3f}")
 
     return accuracy, losses
 

@@ -67,7 +67,6 @@ def _add_if_not_exist(args_dict, kwargs):
     """
     for key, value in args_dict.items():
         if key not in kwargs:
-            print(f"Adding Key: {key}. Value: {value}")
             kwargs[key] = value
 
 
@@ -94,11 +93,11 @@ def train(epochs=500, batch_size=128,
 
     def decorate(train_fn):
         @functools.wraps(train_fn)
-        def trainer_fn(model, data, *args, **kwargs):
+        def trainer_fn(model, *args, **kwargs):
             _add_if_not_exist(decorator_scope, kwargs)
             kwargs['optimizer'] = kwargs['optimizer'](model.parameters(), lr=lr)
             for epoch in range(1, kwargs['epochs'] + 1):
-                accuracy, loss = train_fn(model, data, epoch, *args, **kwargs)
+                accuracy, loss = train_fn(model, epoch, *args, **kwargs)
 
             save_dir = kwargs['save_dir']
             if save_dir is not None:
@@ -120,14 +119,13 @@ class ExtendedMLP(MLP):
 
 
 @train(epochs=200, lr=0.0001, save_dir="teemo", training_finished=lambda : print("training has finished"))
-def train_mnist(model, data, epoch, **kwargs):
-    from torch.utils.data.dataloader import DataLoader
-    data_loader = DataLoader(dataset=data, shuffle=True, batch_size=kwargs['batch_size'])
+def train_mnist(model, epoch, *args, **kwargs):
 
     cuda = torch.cuda.is_available()
     if cuda:
         model = model.cuda()
-
+    print(kwargs)
+    data_loader = kwargs['data']
 
     total_correct = 0
     total = 0
@@ -170,10 +168,12 @@ if __name__ == "__main__":
     import torchvision.transforms as transforms
     training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
 
-    print("teemo EEEEEEEEEE")
     mlp = MLP([
         (784, 400),
         (400, 400),
         (400, 10)
     ])
-    train_mnist(mlp, training_data, lr=0.1, criterion=nn.CrossEntropyLoss())
+    from torch.utils.data.dataloader import DataLoader
+
+    data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
+    train_mnist(mlp, data=data_loader, lr=0.1, criterion=nn.CrossEntropyLoss())

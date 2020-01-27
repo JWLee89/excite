@@ -347,5 +347,8 @@ class SshConnection:
         return f"<SshConnection>: [url={self.url}, username={self.username}, client_name={self.client_name}" \
                f", port={self.port}]"
 
+    def __str__(self):
+        return f"Ssh connections manager. Connections: [{self.url}]"
+
     def __del__(self):
         self.ssh.close()

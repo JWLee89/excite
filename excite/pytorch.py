@@ -6,6 +6,57 @@ import torch
 import torch.nn as nn
 import functools
 
+"""
+    Decorator section
+    ======================
+"""
+
+def train(epochs=500, batch_size=128,
+          optimizer=torch.optim.Adam, lr=0.001,
+          criterion=None,
+          used_gpu=None,
+          patience=None, save_dir=None,
+          training_finished=None):
+    """
+        A convenient decorator for annotating a training function.
+        Used to reduce as many boilerplate code as possible.
+
+        :param epochs: The number of epochs to run
+        :param criterion:
+        :param used_gpu: The GPUs that we wish to use
+        :param optimizer:
+        :param lr: Learning rate
+        :param patience: If early stopping is used, set this to an integer value
+        :param save_dir: If specified, model will be saved to this particular directory
+        :return:
+    """
+    decorator_scope = locals()
+
+    def decorate(train_fn):
+        @functools.wraps(train_fn)
+        def trainer_fn(model, *args, **kwargs):
+            _add_if_not_exist(decorator_scope, kwargs)
+            kwargs['optimizer'] = kwargs['optimizer'](model.parameters(), lr=lr)
+            for epoch in range(1, kwargs['epochs'] + 1):
+                accuracy, loss = train_fn(model, epoch, *args, **kwargs)
+
+            save_dir = kwargs['save_dir']
+            if save_dir is not None:
+                torch.save(model.state_dict(), save_dir)
+
+            finished_fn = kwargs['training_finished']
+            if callable(finished_fn):
+                finished_fn(model)
+
+        return trainer_fn
+
+    return decorate
+
+"""
+    End decorator section
+    ======================
+"""
+
 
 class Module(nn.Module):
     def __init__(self):
@@ -58,10 +109,6 @@ class MLP(nn.Module):
         return output
 
 
-def print_predicate():
-    pass
-
-
 def _add_if_not_exist(args_dict, kwargs):
     """
         Add to keyword args if it does not exist
@@ -74,48 +121,6 @@ def _add_if_not_exist(args_dict, kwargs):
             kwargs[key] = value
 
 
-def train(epochs=500, batch_size=128,
-          optimizer=torch.optim.Adam, lr=0.001,
-          criterion=None,
-          used_gpu=None,
-          patience=None, save_dir=None,
-          training_finished=None):
-    """
-        A convenient decorator for annotating a training function.
-        Used to reduce as many boilerplate code as possible.
-
-        :param epochs: The number of epochs to run
-        :param criterion:
-        :param used_gpu: The GPUs that we wish to use
-        :param optimizer:
-        :param lr: Learning rate
-        :param patience: If early stopping is used, set this to an integer value
-        :param save_dir: If specified, model will be saved to this particular directory
-        :return:
-    """
-    decorator_scope = locals()
-
-    def decorate(train_fn):
-        @functools.wraps(train_fn)
-        def trainer_fn(model, *args, **kwargs):
-            _add_if_not_exist(decorator_scope, kwargs)
-            kwargs['optimizer'] = kwargs['optimizer'](model.parameters(), lr=lr)
-            for epoch in range(1, kwargs['epochs'] + 1):
-                accuracy, loss = train_fn(model, epoch, *args, **kwargs)
-
-            save_dir = kwargs['save_dir']
-            if save_dir is not None:
-                torch.save(model.state_dict(), save_dir)
-
-            finished_fn = kwargs['training_finished']
-            if callable(finished_fn):
-                finished_fn(model)
-
-        return trainer_fn
-
-    return decorate
-
-
 class ExtendedMLP(MLP):
     def forward(self, X):
         # Just extend and modify behavior here if you need a specific implementation
@@ -126,6 +131,17 @@ class ExtendedMLP(MLP):
        save_dir="../data/model/teemo.pt",
        training_finished=lambda x: print(f"Finished training the following model: {x}"))
 def train_mnist(model, epoch, *args, **kwargs):
+    """
+        Simple example of training a model using the
+        @train decorator.
+        :param model: The model that we will be training
+        :param epoch: The current epoch
+        :param args: Extra arguments passed
+        :param kwargs: Key word args. Can be used to override the values
+        specified in @train or the default values to assign hyperparameters
+        dynamically
+        :return:
+    """
     cuda = torch.cuda.is_available()
     if cuda:
         model = model.cuda()

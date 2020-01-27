@@ -5,10 +5,12 @@
 import torch
 import torch.nn as nn
 import functools
+from torchvision.utils import save_image
+
 try:
-    from .util import clock
+    from .util import time_it
 except:
-    from util import clock
+    from util import time_it
 
 """
     Decorator section
@@ -43,7 +45,9 @@ def train(epochs=500, batch_size=128,
             _add_if_not_exist(decorator_scope, kwargs)
             kwargs['optimizer'] = kwargs['optimizer'](model.parameters(), lr=lr)
             for epoch in range(1, kwargs['epochs'] + 1):
-                accuracy, loss = train_fn(model, epoch, *args, **kwargs)
+                # print(train_fn)
+                # print(train_fn.__name__)
+                train_fn(model, epoch, *args, **kwargs)
 
             save_dir = kwargs['save_dir']
             if save_dir is not None:
@@ -74,6 +78,50 @@ class Module(nn.Module):
 
     def train(self, X, Y):
         pass
+
+
+class Autoencoder(nn.Module):
+    def __init__(self, encoder_layers, activation=nn.ReLU(True), batch_norm=None, dropout=nn.Dropout(0.5)):
+        super().__init__()
+        self.activation = activation
+        # All the way up until the last layer
+        temp_encoder_layers = []
+        for layer in encoder_layers[:-1]:
+            temp_encoder_layers.append(nn.Linear(layer[0], layer[1]))
+            temp_encoder_layers.append(self.activation)
+            if batch_norm is not None:
+                temp_encoder_layers.append(batch_norm)
+            if dropout is not None:
+                temp_encoder_layers.append(dropout)
+
+        temp_encoder_layers.append(nn.Linear(encoder_layers[-1][0], encoder_layers[-1][1]))
+        temp_decoder_layers = []
+        # Decoder layers is the direct inverse of original input
+        for layer in reversed(encoder_layers[1:]):
+            temp_decoder_layers.append(nn.Linear(layer[1], layer[0]))
+            temp_decoder_layers.append(self.activation)
+            if batch_norm is not None:
+                temp_decoder_layers.append(batch_norm)
+            if dropout is not None:
+                temp_decoder_layers.append(dropout)
+
+        temp_decoder_layers.append(nn.Linear(encoder_layers[0][1], encoder_layers[0][0]))
+
+        self.encoder = nn.Sequential(*temp_encoder_layers)
+        self.decoder = nn.Sequential(*temp_decoder_layers)
+
+        # Decoders
+
+    def forward(self, X):
+        """
+            Feed forwarding. Autoencoder learning is unsupervised.
+            Reconstruction error used will be measured by euclidean distance
+            :param X:
+            :return:
+        """
+        encoder_output = self.encoder(X)
+        decoder_output = self.decoder(encoder_output)
+        return decoder_output
 
 
 class HyperparameterSearcher():
@@ -132,16 +180,21 @@ def _add_if_not_exist(args_dict, kwargs):
 
 
 class ExtendedMLP(MLP):
+    # TODO: Work on this in the near future
     def forward(self, X):
         # Just extend and modify behavior here if you need a specific implementation
         return "teemo"
 
 
+# Place "time_it" on top of train to get the the amount of time it takes to complete the entire
+# training phase
+@time_it()
 @train(epochs=10, lr=0.0001,
        save_dir="../data/model/teemo.pt",
        training_finished=lambda x: print(f"Finished training the following model: {x}"))
-@clock
-def train_mnist(model, epoch, *args, **kwargs):
+# If you want to measure the amount of time per epoch, place @time_it
+# Before @train
+def train_mlp(model, epoch, *args, **kwargs):
     """
         Simple example of training a model using the
         @train decorator.
@@ -194,18 +247,65 @@ def train_mnist(model, epoch, *args, **kwargs):
     return accuracy, losses
 
 
+def to_img(x):
+    x = 0.5 * (x + 1)
+    x = x.clamp(0, 1)
+    x = x.view(x.size(0), 1, 28, 28)
+    return x
+
+
+@train(save_dir="../data/model/trained_autoencoder.pt", epochs=10)
+def train_autoencoder(model, epoch, *args, **kwargs):
+    data_loader = kwargs['data']
+    CUDA = kwargs['cuda']
+    optimizer = kwargs['optimizer']
+    # print(model.encoder)
+    # print(model.decoder)
+
+    for data in data_loader:
+        img, _ = data
+        if CUDA:
+            img = img.cuda()
+
+        img = img.view(img.size(0), -1)
+
+        y_pred = model(img)
+        loss = kwargs['criterion'](img, y_pred)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    print('epoch [{}/{}], loss:{:.4f}'
+          .format(epoch, kwargs['epochs'], loss.item()))
+    if epoch % 2 == 0:
+        pic = to_img(img.data)
+        save_image(pic, '../data/image_{}.png'.format(epoch))
+
+
 if __name__ == "__main__":
     import torchvision.datasets as datasets
     import torchvision.transforms as transforms
-
-    training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
-
-    mlp = MLP([
-        (784, 400),
-        (400, 400),
-        (400, 10)
-    ])
     from torch.utils.data.dataloader import DataLoader
-
+    training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
     data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
-    train_mnist(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())
+
+    # MNIST MLP Example
+    #
+    # mlp = MLP([
+    #     (784, 400),
+    #     (400, 400),
+    #     (400, 10)
+    # ])
+    #
+    # train_mlp(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())
+
+    # MNIST Autoencoder example
+    autoencoder = Autoencoder([
+        [784, 512],
+        [512, 256],
+        [256, 64],
+        [64, 3]
+    ])
+
+    train_autoencoder(autoencoder.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001, criterion=nn.MSELoss())

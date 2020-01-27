@@ -8,14 +8,14 @@ import functools
 DEFAULT_CLOCK_FMT = '[{elapsed:0.8f}s] {name}({args}) -> {result}'
 
 
-def clock(fmt=DEFAULT_CLOCK_FMT, print_handler=print):
+def time_it(fmt=DEFAULT_CLOCK_FMT, print_handler=print):
     """
         @Credits to "Fluent Python" chapter on decorators for this neat function.
         :param fmt:
         :param print_handler:
         :return:
     """
-    def decorate(func):
+    def decorate_clock(func):
         @functools.wraps(func)
         def clocked(*args, **kwargs):
             t0 = time.perf_counter()
@@ -33,4 +33,4 @@ def clock(fmt=DEFAULT_CLOCK_FMT, print_handler=print):
             print_handler(fmt.format(**locals()))
             return result
         return clocked
-    return decorate
+    return decorate_clock

@@ -8,7 +8,11 @@ import functools
 
 
 class Module(nn.Module):
-    pass
+    def __init__(self):
+        pass
+
+    def train(self, X, Y):
+        pass
 
 
 class HyperparameterSearcher():
@@ -101,7 +105,7 @@ def train(epochs=500, batch_size=128,
 
             save_dir = kwargs['save_dir']
             if save_dir is not None:
-                print(f"saving to directory: {save_dir}")
+                torch.save(model.state_dict(), save_dir)
 
             finished_fn = kwargs['training_finished']
             if callable(finished_fn):
@@ -118,9 +122,10 @@ class ExtendedMLP(MLP):
         return "teemo"
 
 
-@train(epochs=10, lr=0.0001, save_dir="teemo", training_finished=lambda x: print("training has finished yaye!"))
+@train(epochs=10, lr=0.0001,
+       save_dir="../data/model/teemo.pt",
+       training_finished=lambda x: print(f"Finished training the following model: {x}"))
 def train_mnist(model, epoch, *args, **kwargs):
-
     cuda = torch.cuda.is_available()
     if cuda:
         model = model.cuda()
@@ -165,6 +170,7 @@ def train_mnist(model, epoch, *args, **kwargs):
 if __name__ == "__main__":
     import torchvision.datasets as datasets
     import torchvision.transforms as transforms
+
     training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
 
     mlp = MLP([

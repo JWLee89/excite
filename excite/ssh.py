@@ -326,7 +326,7 @@ class SshConnection:
                 """
         cmd = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]').sub('', cmd).replace('\b', '').replace('\r', '')
         self.channel.send(cmd + '\n')
-        time.sleep(0.3)
+        time.sleep(0.5)
         while True:
             if self.channel.recv_ready():
                 channel_data = self.channel.recv(65535).decode("utf-8")

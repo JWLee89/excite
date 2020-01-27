@@ -67,6 +67,14 @@ def train(epochs=500, batch_size=128,
     ======================
 """
 
+class Datasets:
+    """
+        TODO: Create a utility class for handling
+        that helps us get both the test and training set data
+    """
+    def __init__(self):
+        pass
+
 
 class Module(nn.Module):
     # TODO: Create a module that gets rid of
@@ -81,6 +89,9 @@ class Module(nn.Module):
 
 
 class Autoencoder(nn.Module):
+    """
+        A basic Autoencoder
+    """
     def __init__(self, encoder_layers, activation=nn.ReLU(True), batch_norm=None, dropout=nn.Dropout(0.5)):
         super().__init__()
         self.activation = activation
@@ -122,6 +133,20 @@ class Autoencoder(nn.Module):
         encoder_output = self.encoder(X)
         decoder_output = self.decoder(encoder_output)
         return decoder_output
+
+
+class GMM(nn.Module):
+    """
+        A gaussian mixture model class.
+        This generic model will be trained using expectation-maximization (EM)
+        algorithm
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, X):
+        # TODO: Work on this as soon as I can
+        return X
 
 
 class HyperparameterSearcher():

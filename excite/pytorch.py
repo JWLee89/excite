@@ -5,11 +5,16 @@
 import torch
 import torch.nn as nn
 import functools
+try:
+    from .util import clock
+except:
+    from util import clock
 
 """
     Decorator section
     ======================
 """
+
 
 def train(epochs=500, batch_size=128,
           optimizer=torch.optim.Adam, lr=0.001,
@@ -52,6 +57,7 @@ def train(epochs=500, batch_size=128,
 
     return decorate
 
+
 """
     End decorator section
     ======================
@@ -59,6 +65,10 @@ def train(epochs=500, batch_size=128,
 
 
 class Module(nn.Module):
+    # TODO: Create a module that gets rid of
+    # boilerplate code, but achieves the same amount of flexibility
+    # Try writing more pytorch code so that we get a better idea of some
+    # of the pain points and improve on that
     def __init__(self):
         pass
 
@@ -130,6 +140,7 @@ class ExtendedMLP(MLP):
 @train(epochs=10, lr=0.0001,
        save_dir="../data/model/teemo.pt",
        training_finished=lambda x: print(f"Finished training the following model: {x}"))
+@clock
 def train_mnist(model, epoch, *args, **kwargs):
     """
         Simple example of training a model using the
@@ -197,4 +208,4 @@ if __name__ == "__main__":
     from torch.utils.data.dataloader import DataLoader
 
     data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
-    train_mnist(mlp, data=data_loader, lr=0.1, criterion=nn.CrossEntropyLoss())
+    train_mnist(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())

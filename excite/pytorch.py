@@ -83,10 +83,10 @@ class Module(nn.Module):
     # boilerplate code, but achieves the same amount of flexibility
     # Try writing more pytorch code so that we get a better idea of some
     # of the pain points and improve on that
-    def __init__(self):
+    def __init__(self, batch_norm=nn.BatchNorm1d):
         pass
 
-    def train(self, X, Y):
+    def _add_batch_norm(self):
         pass
 
 
@@ -218,7 +218,30 @@ def _get_fc_layers(layers, activation):
     for layer in layers[:-1]:
         temp_layers.append(nn.Linear(layer[0], layer[1]))
         temp_layers.append(activation)
+
+    final_layer = layers[len(layers) - 1]
+    temp_layers.append(nn.Linear(final_layer[0], final_layer[1]))
     return temp_layers
+
+
+class Discriminator(nn.Module):
+    def __init__(self, layers, activation=nn.LeakyReLU):
+        super().__init__()
+        layers = _get_fc_layers(layers)
+        # Final layer is a tanh layer
+        layers.append(nn.Tanh())
+        self.layers = nn.Sequential()
+
+    def forward(self, X):
+        pass
+
+
+class Generator(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, X):
+        pass
 
 
 class GAN(nn.Module):
@@ -229,8 +252,8 @@ class GAN(nn.Module):
     def __init__(self, gen_layers, disc_layers, activation=nn.ReLU):
         super().__init__()
         self.activation = activation
-        self.gen_layers = nn.Sequential(*_get_fc_layers(gen_layers, activation))
-        self.disc_layers = nn.Sequential(*_get_fc_layers(disc_layers, activation))
+        self.generator = Generator(gen_layers)
+        self.discriminator = Discriminator(disc_layers)
 
     def forward(self, X):
         """
@@ -240,7 +263,14 @@ class GAN(nn.Module):
             :param X:
             :return:
         """
-        pass
+        generated_image = self.generator(X)
+
+        # How do we pass both images to the discriminator
+        # For evaluation?
+        discriminated_output = self.discriminator(generated_image)
+
+
+        return generated_image
 
     def loss_function(self, X):
         """
@@ -367,7 +397,7 @@ def train_autoencoder(model, epoch, *args, **kwargs):
         save_image(pic, '../data/image_{}.png'.format(epoch))
 
 
-@time_it
+
 @train(epochs=100)
 def train_GAN(model, epoch, *arg, **kwargs):
     data_loader = kwargs['data']
@@ -376,11 +406,20 @@ def train_GAN(model, epoch, *arg, **kwargs):
 
     for data in data_loader:
         img, _ = data
-        if CUDA:
-            img = img.cuda()
+
+        # Generate random noise
+        random_noise = torch.empty(img.size(0)).normal_(mean=0, std=1)
+
+        generated_images = model(random_noise)
+
+        print(random_noise)
+        break
+
+    # print('epoch [{}/{}], loss:{:.4f}'
+    #       .format(epoch, kwargs['epochs'], loss.item()))
 
 
-def mnist_mlp_example():
+def mnist_mlp_example(data_loader):
     # MNIST MLP Example
     mlp = MLP([
         (784, 400),
@@ -391,7 +430,7 @@ def mnist_mlp_example():
     train_mlp(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())
 
 
-def mnist_autoencoder_example():
+def mnist_autoencoder_example(autoencoder, data_loader):
     # MNIST Autoencoder example
     autoencoder = Autoencoder([
         [784, 512],
@@ -403,17 +442,27 @@ def mnist_autoencoder_example():
     train_autoencoder(autoencoder.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001,
                       criterion=nn.MSELoss())
 
-def mnist_GAN():
+
+def mnist_GAN(data_loader):
     gan = GAN([
         # Generator
-        (1, 256),
+        (2, 256),
         (256, 256),
         (256, 784)
     ],
+        # Discriminator
+        # Output: 1 if from actual dataset
+        # Otherwise, 0
         [
-
+            (784, 256),
+            (256, 256),
+            (256, 1)
         ]
     )
+
+    train_GAN(gan.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001,
+                      criterion=nn.MSELoss())
+
 
 if __name__ == "__main__":
     import torchvision.datasets as datasets
@@ -422,4 +471,6 @@ if __name__ == "__main__":
 
     training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
     data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
+
+    mnist_GAN(data_loader)
 

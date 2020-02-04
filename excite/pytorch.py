@@ -67,11 +67,13 @@ def train(epochs=500, batch_size=128,
     ======================
 """
 
+
 class Datasets:
     """
         TODO: Create a utility class for handling
         that helps us get both the test and training set data
     """
+
     def __init__(self):
         pass
 
@@ -88,10 +90,21 @@ class Module(nn.Module):
         pass
 
 
+class DAGMM(nn.Module):
+    """
+        An implementation of the Deep Autoencoding
+        Gaussian Mixture Model.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+
 class Autoencoder(nn.Module):
     """
         A basic Autoencoder
     """
+
     def __init__(self, encoder_layers, activation=nn.ReLU(True), batch_norm=None, dropout=nn.Dropout(0.5)):
         super().__init__()
         self.activation = activation
@@ -141,6 +154,7 @@ class GMM(nn.Module):
         This generic model will be trained using expectation-maximization (EM)
         algorithm
     """
+
     def __init__(self):
         super().__init__()
 
@@ -190,6 +204,51 @@ class MLP(nn.Module):
     def forward(self, X):
         output = self.layers(X)
         return output
+
+
+def _get_fc_layers(layers, activation):
+    """
+        :param layers: The specification of the layer. Each item contains
+        an input dimension and output dimension. E.g. (128, 64) ->
+        input size of 128, output neuron of 64.
+        :param nn_layer:
+        :return:
+    """
+    temp_layers = []
+    for layer in layers[:-1]:
+        temp_layers.append(nn.Linear(layer[0], layer[1]))
+        temp_layers.append(activation)
+    return temp_layers
+
+
+class GAN(nn.Module):
+    """
+        Simple Generative Adversarial Network (By Goodfellow, 2014).
+        
+    """
+    def __init__(self, gen_layers, disc_layers, activation=nn.ReLU):
+        super().__init__()
+        self.activation = activation
+        self.gen_layers = nn.Sequential(*_get_fc_layers(gen_layers, activation))
+        self.disc_layers = nn.Sequential(*_get_fc_layers(disc_layers, activation))
+
+    def forward(self, X):
+        """
+            Forward pass of a GAN. Given some random noise ~ N(0, 1)
+            generate data that is likely from a similar distribution
+            to the input data
+            :param X:
+            :return:
+        """
+        pass
+
+    def loss_function(self, X):
+        """
+            Loss function of the GAN
+            :param X:
+            :return:
+        """
+        pass
 
 
 def _add_if_not_exist(args_dict, kwargs):
@@ -308,23 +367,31 @@ def train_autoencoder(model, epoch, *args, **kwargs):
         save_image(pic, '../data/image_{}.png'.format(epoch))
 
 
-if __name__ == "__main__":
-    import torchvision.datasets as datasets
-    import torchvision.transforms as transforms
-    from torch.utils.data.dataloader import DataLoader
-    training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
-    data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
+@time_it
+@train(epochs=100)
+def train_GAN(model, epoch, *arg, **kwargs):
+    data_loader = kwargs['data']
+    CUDA = kwargs['cuda']
+    optimizer = kwargs['optimizer']
 
+    for data in data_loader:
+        img, _ = data
+        if CUDA:
+            img = img.cuda()
+
+
+def mnist_mlp_example():
     # MNIST MLP Example
-    #
-    # mlp = MLP([
-    #     (784, 400),
-    #     (400, 400),
-    #     (400, 10)
-    # ])
-    #
-    # train_mlp(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())
+    mlp = MLP([
+        (784, 400),
+        (400, 400),
+        (400, 10)
+    ])
 
+    train_mlp(mlp, data=data_loader, lr=0.01, criterion=nn.CrossEntropyLoss())
+
+
+def mnist_autoencoder_example():
     # MNIST Autoencoder example
     autoencoder = Autoencoder([
         [784, 512],
@@ -333,4 +400,26 @@ if __name__ == "__main__":
         [64, 3]
     ])
 
-    train_autoencoder(autoencoder.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001, criterion=nn.MSELoss())
+    train_autoencoder(autoencoder.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001,
+                      criterion=nn.MSELoss())
+
+def mnist_GAN():
+    gan = GAN([
+        # Generator
+        (1, 256),
+        (256, 256),
+        (256, 784)
+    ],
+        [
+
+        ]
+    )
+
+if __name__ == "__main__":
+    import torchvision.datasets as datasets
+    import torchvision.transforms as transforms
+    from torch.utils.data.dataloader import DataLoader
+
+    training_data = datasets.MNIST(root="../data/", download=True, train=True, transform=transforms.ToTensor())
+    data_loader = DataLoader(dataset=training_data, shuffle=True, batch_size=128)
+

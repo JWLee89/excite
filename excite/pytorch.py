@@ -5,7 +5,9 @@
 import torch
 import torch.nn as nn
 import functools
+import os
 from torchvision.utils import save_image
+from torch.autograd import Variable
 
 try:
     from .util import time_it
@@ -217,7 +219,7 @@ def _get_fc_layers(layers, activation):
     temp_layers = []
     for layer in layers[:-1]:
         temp_layers.append(nn.Linear(layer[0], layer[1]))
-        temp_layers.append(activation)
+        temp_layers.append(activation())
 
     final_layer = layers[len(layers) - 1]
     temp_layers.append(nn.Linear(final_layer[0], final_layer[1]))
@@ -227,27 +229,33 @@ def _get_fc_layers(layers, activation):
 class Discriminator(nn.Module):
     def __init__(self, layers, activation=nn.LeakyReLU):
         super().__init__()
-        layers = _get_fc_layers(layers)
-        # Final layer is a tanh layer
-        layers.append(nn.Tanh())
-        self.layers = nn.Sequential()
+        layers = _get_fc_layers(layers, activation)
+        # Final layer is a sigmoid since we assume 0.5 > is
+        layers.append(nn.Sigmoid())
+        self.layers = nn.Sequential(*layers)
 
     def forward(self, X):
-        pass
+        output = self.layers(X)
+        return output
 
 
 class Generator(nn.Module):
-    def __init__(self):
+    def __init__(self, layers, activation=nn.LeakyReLU):
         super().__init__()
+        layers = _get_fc_layers(layers, activation)
+        # Final layer is a sigmoid since we assume 0.5 > is
+        layers.append(nn.Tanh())
+        self.layers = nn.Sequential(*layers)
 
     def forward(self, X):
-        pass
+        output = self.layers(X)
+        return output
 
 
-class GAN(nn.Module):
+class GAN:
     """
         Simple Generative Adversarial Network (By Goodfellow, 2014).
-        
+        For now, this is for GANS that are operated on images
     """
     def __init__(self, gen_layers, disc_layers, activation=nn.ReLU):
         super().__init__()
@@ -255,30 +263,79 @@ class GAN(nn.Module):
         self.generator = Generator(gen_layers)
         self.discriminator = Discriminator(disc_layers)
 
-    def forward(self, X):
+    def fit(self, data_loader, batch_size=128, lr=0.0001, epochs=10, **kwargs):
         """
-            Forward pass of a GAN. Given some random noise ~ N(0, 1)
-            generate data that is likely from a similar distribution
-            to the input data
+
             :param X:
             :return:
         """
-        generated_image = self.generator(X)
+        gen_optimizer = torch.optim.Adam(self.generator.parameters(), lr=lr, betas=(0.5, 0.999))
+        disc_optimizer = torch.optim.Adam(self.discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
 
-        # How do we pass both images to the discriminator
-        # For evaluation?
-        discriminated_output = self.discriminator(generated_image)
+        gen_criterion = None
+        disc_criterion = None
+
+        criterion = torch.nn.BCELoss()
+
+        for epoch in range(1, epochs + 1):
+            for step, (imgs, labels) in enumerate(data_loader):
+                imgs = imgs.view(batch_size, -1)
+                # Ground truth labels
+                valid = Variable(torch.Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
+                fake = Variable(torch.Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
+
+                # Clear gradients
+                gen_optimizer.zero_grad()
+                disc_optimizer.zero_grad()
+
+                # Noise from standard normal distribution as input
+                z = torch.empty(batch_size).normal_(mean=0, std=1).view(batch_size, -1)
+
+                generated_images = self.generator(z)
+                discriminator_result_fake_image = self.discriminator(generated_images)
+                gen_loss = criterion(discriminator_result_fake_image, valid)
+
+                # Update generator
+                gen_loss.backward()
+                gen_optimizer.step()
+
+                # Train discriminator
+                real_image_loss = criterion(self.discriminator(imgs), valid)
+                fake_image_loss = criterion(discriminator_result_fake_image.detach(), fake)
+                disc_loss = (real_image_loss + fake_image_loss) / 2
+
+                disc_loss.backward()
+                disc_optimizer.step()
+
+                print(f"Epoch: {epoch}/{epochs}. Batch no: {step}/{len(data_loader)}. "
+                      f"Generator Loss: {gen_loss}. Discriminator Loss: {disc_loss}")
 
 
-        return generated_image
+class Model:
+    """
+        TODO: Finish this when i get a chance
+        Generic model class used for inferring, fitting, loading and saving models
+    """
+    def __init__(self, model):
+        if model is not issubclass(model, nn.Module):
+            raise ValueError(f"Model {model}[type: {type(model)}] Should be of type torch.nn.Module.")
+        self.model = model
+        self.is_unsupervised = False
+        self.lr = 0.001
 
-    def loss_function(self, X):
+    def fit(self, X, Y=None, epochs=200, **kwargs):
+        self.is_unsupervised = Y is None
+
+    def save(self, path):
         """
-            Loss function of the GAN
-            :param X:
+            Save the model to the given_path
+            on the current machine
+            :param path:
             :return:
         """
-        pass
+        if os.path.isdir(path):
+            raise ValueError(f"Given path: {path} is a directory.")
+        torch.save(self.model.state_dict(), path)
 
 
 def _add_if_not_exist(args_dict, kwargs):
@@ -403,6 +460,7 @@ def train_GAN(model, epoch, *arg, **kwargs):
     data_loader = kwargs['data']
     CUDA = kwargs['cuda']
     optimizer = kwargs['optimizer']
+    batch_size = kwargs['batch_size']
 
     for data in data_loader:
         img, _ = data
@@ -410,6 +468,8 @@ def train_GAN(model, epoch, *arg, **kwargs):
         # Generate random noise
         random_noise = torch.empty(img.size(0)).normal_(mean=0, std=1)
 
+        # Establish Ground Truth
+        actual_images = img.view(batch_size, -1) # Flatten the images
         generated_images = model(random_noise)
 
         print(random_noise)
@@ -446,7 +506,7 @@ def mnist_autoencoder_example(autoencoder, data_loader):
 def mnist_GAN(data_loader):
     gan = GAN([
         # Generator
-        (2, 256),
+        (1, 256),
         (256, 256),
         (256, 784)
     ],
@@ -460,8 +520,8 @@ def mnist_GAN(data_loader):
         ]
     )
 
-    train_GAN(gan.cuda(), cuda=torch.cuda.is_available(), data=data_loader, lr=0.001,
-                      criterion=nn.MSELoss())
+    gan.fit(data_loader, cuda=torch.cuda.is_available(), lr=0.001,
+                      criterion=nn.BCELoss(), batch_size=128)
 
 
 if __name__ == "__main__":

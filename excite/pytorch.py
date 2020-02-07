@@ -454,31 +454,6 @@ def train_autoencoder(model, epoch, *args, **kwargs):
         save_image(pic, '../data/image_{}.png'.format(epoch))
 
 
-
-@train(epochs=100)
-def train_GAN(model, epoch, *arg, **kwargs):
-    data_loader = kwargs['data']
-    CUDA = kwargs['cuda']
-    optimizer = kwargs['optimizer']
-    batch_size = kwargs['batch_size']
-
-    for data in data_loader:
-        img, _ = data
-
-        # Generate random noise
-        random_noise = torch.empty(img.size(0)).normal_(mean=0, std=1)
-
-        # Establish Ground Truth
-        actual_images = img.view(batch_size, -1) # Flatten the images
-        generated_images = model(random_noise)
-
-        print(random_noise)
-        break
-
-    # print('epoch [{}/{}], loss:{:.4f}'
-    #       .format(epoch, kwargs['epochs'], loss.item()))
-
-
 def mnist_mlp_example(data_loader):
     # MNIST MLP Example
     mlp = MLP([

@@ -32,7 +32,7 @@ def common_commands(session_name, tasks=[]):
 
 def print_gpu_info(server_manager):
     """
-        :param server_manager: Manager object containing a list
+        :param server_manager: Manager object co¡¡ntaining a list
         of connections.
         :return:
     """
@@ -64,12 +64,12 @@ def print_gpu_info(server_manager):
 
 if __name__ == "__main__":
     port = 9999
-    username = 'username'
-    password = 'password'
+    username = 'jwlee'
+    password = 'badgerman1337'
 
     # Server and session info
-    servers = [f"server{i}.domain.co.kr" for i in range(5, 8)]
-    tmux_session_names = [f"tmux_session_names{i}" for i in range(5, 8)]
+    servers = [f"warhol{i}.snu.ac.kr" for i in range(1, 8)]
+    tmux_session_names = [f"tmux_session_names{i}" for i in range(1, 8)]
 
     # Create the ssh connection objects.
     # Each connection represents an ssh connection to a server
@@ -80,15 +80,19 @@ if __name__ == "__main__":
     # Print GPU info:
     print_gpu_info(manager)
 
+    print(manager[0].gpu_info())
+    print(manager[1].gpu_info())
+    print(manager.gpu_info())
+
     # For all the servers enlisted,
     # perform the simple commands
-    for i, connection in enumerate(manager):
-        # Print connection info
-        print(connection)
-        # Perform the following commands
-        connection.cmd(
-            [
-                Tmux.new_session(tmux_session_names[i]),
-                Tmux.ls(),
-                Tmux.detach()
-            ])
+    # for i, connection in enumerate(manager):
+    #     # Print connection info
+    #     print(connection)
+    #     # Perform the following commands
+    #     connection.cmd(
+    #         [
+    #             Tmux.new_session(tmux_session_names[i]),
+    #             Tmux.ls(),
+    #             Tmux.detach()
+    #         ])

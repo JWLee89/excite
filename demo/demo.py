@@ -64,11 +64,11 @@ def print_gpu_info(server_manager):
 
 if __name__ == "__main__":
     port = 9999
-    username = 'jwlee'
-    password = 'badgerman1337'
+    username = 'asdasdas'
+    password = 'asdasd'
 
     # Server and session info
-    servers = [f"warhol{i}.snu.ac.kr" for i in range(1, 8)]
+    servers = [f"asdasd{i}.snu.ac.kr" for i in range(1, 8)]
     tmux_session_names = [f"tmux_session_names{i}" for i in range(1, 8)]
 
     # Create the ssh connection objects.

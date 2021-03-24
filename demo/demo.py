@@ -15,9 +15,6 @@ from excite.cmd import Tmux
 def common_commands(session_name, tasks=[]):
     """
         Set of common commands when creating new session
-        :param session_name:
-        :param tasks:
-        :return:
     """
     cmds = [
         Tmux.kill_session(session_name),
@@ -32,7 +29,7 @@ def common_commands(session_name, tasks=[]):
 
 def print_gpu_info(server_manager):
     """
-        :param server_manager: Manager object co¡¡ntaining a list
+        :param server_manager: Manager object containing a list
         of connections.
         :return:
     """
